@@ -1,0 +1,481 @@
+const API_BASE = "https://housingbase-71z.onrender.com"
+
+async function getMe() {
+  try {
+    const token = localStorage.getItem("authToken");
+    const res = await fetch(`${API_BASE}/api/me`, {
+      headers: { Authorization: `Bearer ${token}` }
+    });
+
+    if (!res.ok) return null;
+    return await res.json();
+  } catch {
+    return null;
+  }
+}
+
+function avatarURL(path) {
+  if (!path || path.length === 0) return `${API_BASE}/uploads/avatars/default.png`;
+  if (path.startsWith("http")) return path;
+  return `${API_BASE}/${path.replace(/^\/?/, "")}`;
+}
+function renderAuth(user) {
+  const loggedOut = document.getElementById("logged-out");
+  const loggedIn = document.getElementById("logged-in");
+  const avatar = document.getElementById("avatarSmall");
+  const displayName = document.getElementById("displayName");
+
+  if (user) {
+    // Show logged-in, hide logged-out
+    if (loggedOut) loggedOut.style.display = "none";
+    if (loggedIn) loggedIn.style.display = "flex"; // flex aligns nicely in nav
+
+    // Update avatar
+    if (avatar) {
+      avatar.src = avatarURL(user.avatar);
+      avatar.style.cursor = "pointer";
+      avatar.onclick = () => window.location.href = `/profile.html?user=${user.username}`;
+    }
+
+    // Update display name
+    if (displayName) {
+      displayName.textContent = user.displayName || user.username;
+      displayName.style.display = "inline"; // show the span
+      displayName.style.cursor = "pointer";
+      displayName.onclick = () => window.location.href = `/profile.html?user=${user.username}`;
+    }
+  } else {
+    // Show logged-out, hide logged-in
+    if (loggedOut) loggedOut.style.display = "flex";
+    if (loggedIn) loggedIn.style.display = "none";
+    if (displayName) displayName.style.display = "none";
+  }
+}
+
+
+
+document.addEventListener("DOMContentLoaded", () => {
+  const loginBtn = document.getElementById("loginBtn");
+  if (loginBtn) {
+    loginBtn.addEventListener("click", async () => {
+      const email = document.getElementById("email")?.value.trim();
+      const password = document.getElementById("password")?.value.trim();
+
+      if (!email || !password) {
+        alert("Please enter your email and password.");
+        return;
+      }
+
+      try {
+        const res = await fetch(`${API_BASE}/api/login`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ usernameOrEmail: email, password })
+        });
+        const data = await res.json();
+        if (res.ok) {
+          localStorage.setItem("authToken", data.token);
+          renderAuth(data);
+          window.location.href = "/index.html";
+        }
+
+      } catch (err) {
+        alert(err.message);
+      }
+    });
+  }
+
+  const logoutBtn = document.getElementById("logoutBtn");
+  if (logoutBtn) {
+    logoutBtn.addEventListener("click", async () => {
+      const token = localStorage.getItem("authToken");
+      await fetch(`${API_BASE}/api/logout`, {
+        method: "POST",
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      localStorage.removeItem("authToken");
+
+      renderAuth(null);
+      if (window.location.pathname !== "/index.html") window.location.href = "/index.html";
+    });
+  }
+});
+async function loadAnnouncement() {
+  try {
+    const token = localStorage.getItem("authToken");
+    const res = await fetch(`${API_BASE}/api/announcement`, {
+      headers: { Authorization: `Bearer ${token}` }
+    });
+    if (!res.ok) return;
+    const data = await res.json();
+    const box = document.getElementById("announcement");
+    if (!box) return;
+
+    if (data?.text) {
+      box.style.display = "block";
+      box.style.marginTop = "5rem";
+      box.style.textAlign = "center";
+      box.style.fontWeight = "bold";
+
+
+      box.style.backgroundColor = "#ff7300ff";
+      box.style.color = "#ffffff";
+
+      box.textContent = data.text;
+    } else {
+      box.style.display = "none";
+    }
+  } catch (err) {
+    console.error("Failed to load announcement:", err);
+  }
+}
+
+function renderFakeAnnouncement() {
+  const box = document.getElementById("announcement");
+  if (!box) return;
+
+
+  const fakeData = {
+    text: "Expecting downtime between 1:00PM EST and 9:00PM EST on October 26th for server maintenance.",
+    bg_color: "#ff7300ff",
+    text_color: "#ffffff"
+  };
+
+  box.style.display = "block";
+  box.style.marginTop = "5rem";
+  box.style.backgroundColor = fakeData.bg_color;
+  box.style.textAlign = "center";
+  box.style.fontWeight = "bold";
+  box.style.color = fakeData.text_color;
+  box.textContent = fakeData.text;
+}
+
+
+
+function showDeleteModal(addonName, onConfirm) {
+  document.getElementById("del-confirm-desc").textContent =
+    `Are you sure you want to delete '${addonName}'?`;
+
+  const overlay = document.getElementById("del-confirm-overlay");
+  const box = document.getElementById("del-confirm-box");
+
+  overlay.classList.add("show");
+  overlay.style.opacity = "1";
+  box.style.transform = "scale(1)";
+
+  document.getElementById("del-confirm-yes").onclick = () => {
+    closeDeleteModal();
+    onConfirm();
+  };
+
+  document.getElementById("del-confirm-no").onclick = closeDeleteModal;
+  document.getElementById("del-confirm-close").onclick = closeDeleteModal;
+  overlay.onclick = e => {
+    if (e.target.id === "del-confirm-overlay") closeDeleteModal();
+  };
+
+  document.addEventListener("keydown", e => {
+    if (e.key === "Escape") closeDeleteModal();
+  });
+}
+
+function closeDeleteModal() {
+  const modalOverlay = document.getElementById("del-confirm-overlay");
+  const modalBox = document.getElementById("del-confirm-box");
+
+  modalOverlay.style.opacity = "0";
+  modalBox.style.transform = "scale(0.5)";
+
+  const handler = function (e) {
+    if (e.propertyName === "opacity") {
+      modalOverlay.classList.remove("show");
+      modalOverlay.style.opacity = "";
+      modalBox.style.transform = "";
+      modalOverlay.removeEventListener("transitionend", handler);
+    }
+  };
+
+  modalOverlay.addEventListener("transitionend", handler);
+}
+
+
+async function loadAddons() {
+  const me = await getMe();
+  const container = document.getElementById("addon-list");
+  if (!container) return;
+  container.innerHTML = "";
+
+  try {
+    const token = localStorage.getItem("authToken");
+    const res = await fetch(`${API_BASE}/api/addons`, {
+      headers: { Authorization: token ? `Bearer ${token}` : "" }
+    });
+    if (!res.ok) return;
+    const addons = await res.json();
+
+    addons.forEach(a => {
+      const card = document.createElement("div");
+      card.className = "addon-card";
+
+      // Top row with title and badges
+      const topRow = document.createElement("div");
+      topRow.style.display = "flex";
+      topRow.style.justifyContent = "space-between";
+      topRow.style.alignItems = "center";
+
+      const title = document.createElement("h4");
+      if (typeof a.name === "string" && a.name.replaceColorCodes) {
+        title.appendChild(a.name.replaceColorCodes()); // ✅ keep color codes
+      } else {
+        title.textContent = a.name;
+      }
+      topRow.appendChild(title);
+
+      const badges = document.createElement("div");
+      badges.style.display = "flex";
+      badges.style.gap = "6px";
+
+      const v = document.createElement("span");
+      v.className = "cf-badge";
+      v.textContent = a.version || "1.0.0";
+      badges.appendChild(v);
+
+      const d = document.createElement("span");
+      d.className = "cf-badge dl-badge";
+      d.textContent = `⬇ ${a.downloads ?? 0}`; // ✅ from server
+      badges.appendChild(d);
+
+      const l = document.createElement("span");
+      l.className = "cf-badge like-badge";
+      l.textContent = `❤ ${a.likes ?? 0}`; // ✅ from server
+      badges.appendChild(l);
+
+      topRow.appendChild(badges);
+      card.appendChild(topRow);
+
+      // Description
+      if (a.description) {
+        const desc = document.createElement("p");
+        if (typeof a.description === "string" && a.description.replaceColorCodes) {
+          desc.appendChild(a.description.replaceColorCodes()); // ✅ keep color codes
+        } else {
+          desc.textContent = a.description;
+        }
+        card.appendChild(desc);
+      }
+
+      // Buttons
+      const btnContainer = document.createElement("div");
+      btnContainer.style.display = "flex";
+      btnContainer.style.gap = "8px";
+
+      // Download button
+      const downloadBtn = document.createElement("a");
+      downloadBtn.className = "dlbutton";
+      downloadBtn.href = `${API_BASE}/api/addons/${a.id}/download`;
+      const dlButton = document.createElement("button");
+      dlButton.textContent = "Download";
+      downloadBtn.appendChild(dlButton);
+
+      downloadBtn.onclick = async (e) => {
+  e.preventDefault();
+  try {
+    const token = localStorage.getItem("authToken");
+    const res = await fetch(`${API_BASE}/api/addons/${a.id}/download`, {
+      headers: token ? { Authorization: `Bearer ${token}` } : {}
+    });
+    if (!res.ok) { alert("Download failed."); return; }
+
+    // ✅ Fetch updated downloads count from headers or server endpoint
+    const updatedAddonRes = await fetch(`${API_BASE}/api/addons/${a.id}`);
+    const updatedAddon = await updatedAddonRes.json();
+    a.downloads = updatedAddon.downloads ?? a.downloads;
+    d.textContent = `⬇ ${a.downloads}`;
+
+    // Download file
+    const disposition = res.headers.get("Content-Disposition");
+    let filename = a.file_name || `${a.name}.htsl`;
+    if (disposition) {
+      const match = disposition.match(/filename="(.+)"/);
+      if (match) filename = match[1];
+    }
+    const blob = await res.blob();
+    const aTag = document.createElement("a");
+    aTag.href = URL.createObjectURL(blob);
+    aTag.download = filename;
+    document.body.appendChild(aTag);
+    aTag.click();
+    aTag.remove();
+
+  } catch (err) {
+    console.error(err);
+    alert("Download failed.");
+  }
+};
+      btnContainer.appendChild(downloadBtn);
+
+      // Like button
+      // needs to have a <span class="heart">❤</span> instead of just ❤
+      const likeBtn = document.createElement("button");
+      likeBtn.textContent = "";
+      likeBtn.className = "like-btn";
+
+      const heartSpan = document.createElement("span");
+heartSpan.className = "heart";
+heartSpan.textContent = "❤";
+
+likeBtn.appendChild(heartSpan);
+      
+likeBtn.onclick = async () => {
+  try {
+    const token = localStorage.getItem("authToken");
+    if (!token) { alert("You must be logged in to like addons."); return; }
+
+    const res = await fetch(`${API_BASE}/api/addons/${a.id}/like`, {
+      method: "POST",
+      headers: { Authorization: `Bearer ${token}` }
+    });
+
+    const data = await res.json();
+    if (res.ok) {
+      // ✅ Use server-provided value
+      a.likes = data.likes;
+      l.textContent = `❤ ${a.likes}`;
+    } else {
+      alert(data.error || "Failed to like addon");
+    }
+  } catch (err) {
+    console.error(err);
+    alert("Failed to like addon.");
+  }
+};
+
+      btnContainer.appendChild(likeBtn);
+
+      // Delete button
+      if (me && (me.username === a.username || me.is_admin)) {
+        const delBtn = document.createElement("button");
+        delBtn.textContent = "Delete";
+        delBtn.className = "del-btn";
+        delBtn.onclick = () => {
+          showDeleteModal(a.name, async () => {
+            const token = localStorage.getItem("authToken");
+            const delRes = await fetch(`${API_BASE}/api/addons/${a.id}`, {
+              method: "DELETE",
+              headers: { Authorization: `Bearer ${token}` }
+            });
+            if (delRes.status === 204) loadAddons();
+          });
+        };
+        btnContainer.appendChild(delBtn);
+      }
+
+      card.appendChild(btnContainer);
+
+      // Meta (author & date)
+      const meta = document.createElement("p");
+      meta.className = "meta";
+      const avatarImg = document.createElement("img");
+      avatarImg.src = avatarURL(a.avatar);
+      avatarImg.width = 24;
+      avatarImg.height = 24;
+      avatarImg.alt = "Avatar";
+      avatarImg.className = "avatar-img";
+      avatarImg.style.borderRadius = "4px";
+      avatarImg.style.marginRight = "6px";
+
+      const userLink = document.createElement("a");
+      userLink.href = `/profile.html?user=${a.username}`;
+      userLink.textContent = "@" + (a.displayName || a.username);
+      userLink.className = "user-link";
+
+      const dateSpan = document.createElement("span");
+      dateSpan.style.marginLeft = "8px";
+      dateSpan.textContent = new Date(a.created_at).toLocaleString();
+      dateSpan.className = "date";
+
+      meta.appendChild(avatarImg);
+      meta.appendChild(userLink);
+      meta.appendChild(dateSpan);
+      card.appendChild(meta);
+
+      // Modal
+      card.addEventListener("click", e => {
+        if (e.target.closest("a") || e.target.tagName === "BUTTON") return;
+        document.getElementById("modal-title").textContent = a.name;
+        document.getElementById("modal-desc").textContent = a.description || "No description provided.";
+        document.getElementById("modal-download").href = `${API_BASE}/api/addons/${a.id}/download`;
+
+        const overlay = document.getElementById("modal-overlay");
+        const box = document.getElementById("modal-box");
+        const modalBody = document.querySelector(".modal-body");
+        overlay.classList.add("show");
+        overlay.style.opacity = "1";
+        box.style.transform = "scale(1)";
+
+        const oldPre = modalBody.querySelector("pre");
+        if (oldPre) oldPre.remove();
+
+        fetch(`${API_BASE}/api/addons/${a.id}/contents`)
+          .then(res => res.json())
+          .then(data => {
+            const pre = document.createElement("pre");
+            pre.textContent = data.content || "(empty file)";
+            modalBody.appendChild(pre);
+          }).catch(console.error);
+      });
+
+      container.appendChild(card);
+    });
+
+  } catch (err) {
+    console.error("Failed to load addons:", err);
+  }
+}
+
+
+
+// Utility to remove Minecraft-style color codes
+function stripColorCodes(text) {
+  return text.replace(/§[0-9A-FK-ORa-fk-or]/g, '');
+}
+document.addEventListener("DOMContentLoaded", async () => {
+  // --- Render authentication ---
+  const me = await getMe();
+  renderAuth(me);
+
+  // --- Search functionality ---
+  const searchInput = document.querySelector(".cf-search input");
+  if (!searchInput) return;
+
+  // store cached addons to avoid refetching
+  let allAddons = [];
+
+  async function initSearch() {
+    // Wait until addons have loaded
+    await loadAddons();
+    allAddons = Array.from(document.querySelectorAll("#addon-list .addon-card"));
+  }
+
+  // Initialize cache
+  await initSearch();
+
+  // Live search
+  searchInput.addEventListener("input", e => {
+    const keyword = e.target.value.toLowerCase().trim();
+    allAddons.forEach(card => {
+      const titleEl = card.querySelector("h4");
+      const metaUser = card.querySelector(".user-link");
+
+      const titleText = stripColorCodes(titleEl?.textContent || "").toLowerCase();
+      const userText = stripColorCodes(metaUser?.textContent || "").toLowerCase();
+
+      // check partial includes
+      const matches = keyword === "" ||
+        titleText.includes(keyword) ||
+        userText.includes(keyword);
+
+      card.style.display = matches ? "" : "none";
+    });
+  });
+});

@@ -1,0 +1,361 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <link rel="icon" href="/image/favicon.png" type="image/png" />
+  <link rel="apple-touch-icon" sizes="180x180" href="/image/apple-touch-icon.png" />
+  <link rel="stylesheet" href="style.css" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/7.0.1/css/all.min.css" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;900&display=swap" rel="stylesheet" />
+  <title>Home | HousingBase</title>
+
+  <style>
+    body {
+      overflow-x: hidden;
+    }
+
+    #typedText {
+      font-family: monospace;
+      background-color: rgb(19, 19, 19);
+      color: rgb(236, 236, 236);
+      white-space: nowrap;
+      z-index: 3;
+    }
+
+    #typewriter {
+      white-space: nowrap;
+      display: inline-block;
+      background-color: rgb(19, 19, 19);
+      padding-right: 7px;
+      padding-left: 2px;
+      z-index: 3;
+    }
+
+    #cursor {
+      display: inline-block;
+      opacity: 1;
+      animation: blink 1s step-start infinite;
+    }
+
+    #cursor.hidden {
+      opacity: 0;
+    }
+
+    @keyframes blink {
+
+      0%,
+      50%,
+      100% {
+        opacity: 1;
+      }
+
+      25%,
+      75% {
+        opacity: 0;
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <div class="dot-background"></div>
+  <header>
+    <div class="logo">
+  <a href="/index.html" style="display: inline-block;">
+    <img src="image/blueblue.png" alt="HousingBase Logo">
+  </a>
+</div>
+
+    <div class="hamburger">
+      <span></span>
+      <span></span>
+      <span></span>
+    </div>
+    <nav class="nav-links">
+      <a href="/housing.html">Housing Browser</a>
+      <a href="/fcm.html">FCM</a>
+      <a href="/browser.html">HTSL Library</a>
+      <a href="/dashboard.html">Dashboard</a>
+      <a href="/projects.html">Projects</a>
+      <button class="nav-btn">Sign In</button>
+    </nav>
+  </header>
+
+  <main class="hero">
+    <div class="hero-text">
+      <h1>Housing<span class="editor-title">Base</span></h1>
+      <p class="subtitle" id="typewriter">
+        <span id="typedText"></span><span id="cursor">_</span>
+      </p>
+      <p class="description">
+        The <span class="highlighttxt">#1 website</span> for Housing creators!<br />
+      </p>
+      <div class="feature-tags">
+        <span>Upload HTSL</span>
+        <span>Download HTSL</span>
+        <span>cool stuff</span>
+        <span>Keep your private code organized</span>
+        <span>Housing Tools</span>
+        <span>Online Color Code Tester</span>
+        <span>Browse Hypixel Housing online</span>
+      </div>
+      <div class="index-buttons">
+        <button class="primary-btn">Primary</button>
+        <button class="secondary-btn">Secondary</button>
+      </div>
+    </div>
+    <div class="hero-image"></div>
+  </main>
+
+  <section class="promo">
+    <h2>Upload and share <span class="highlight">HTSL.</span></h2>
+    <h3>Distribute, upload and share your creations with our custom <a href="browser.html">HTSL Library</a>.</h3>
+    wip <span class="highlighttxt">by spigotbase</span>
+  </section>
+
+  <section class="addon-ticker-section">
+    <div class="addon-ticker" id="addonTicker"></div>
+  </section>
+
+  <div class="section2"></div>
+
+  <footer class="footer">
+    <div class="footer-container">
+      <div class="footer-top">
+        <img src="/image/fullwhite.png" alt="HousingBase Logo" class="footer-logo" />
+        <div class="social-icons">
+          <a href="https://www.youtube.com/@spigotbase" target="_blank" aria-label="YouTube">
+            <i class="fab fa-youtube"></i>
+          </a>
+          <a href="https://github.com/spigotbase" target="_blank" aria-label="GitHub">
+            <i class="fab fa-github"></i>
+          </a>
+        </div>
+      </div>
+      <div class="footer-links">
+        <a href="/index.html">About</a>
+        <a href="/contact.html">Contact</a>
+        <a href="/terms.html">Terms</a>
+      </div>
+      <p class="footer-credit">&copy; 2025 <b>HousingBase</b>. All Rights Reserved</p>
+    </div>
+  </footer>
+
+  <!-- Modal -->
+  <div id="modal-overlay">
+    <div id="modal-box">
+      <div class="modal-header">
+        <h3 id="modal-title"></h3>
+        <span id="modal-close">&times;</span>
+      </div>
+      <div class="modal-body">
+        <p id="modal-desc"></p>
+        <h4>Code Contents:</h4>
+      </div>
+    </div>
+  </div>
+
+  <div id="del-confirm-overlay" class="del-modal-overlay">
+    <div id="del-confirm-box" class="del-modal-box">
+      <div class="del-modal-header">
+        <h3>Confirm Action?</h3>
+        <span id="del-confirm-close" class="del-modal-close">&times;</span>
+      </div>
+      <div class="del-modal-body">
+        <p id="del-confirm-desc">Are you sure you want to delete '<Addon Name>'?</p>
+        <div style="margin-top:12px; display:flex; gap:10px;">
+          <button id="del-confirm-yes" class="primary-btn">Confirm</button>
+          <button id="del-confirm-no" class="del-btn">Cancel</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+<script>
+document.addEventListener("DOMContentLoaded", () => {
+  const ticker = document.getElementById("addonTicker");
+  if (!ticker) return;
+
+  // === LOCAL FAKE ADDONS ===
+  const fakeAddons = [
+    { id: "1", name: "Local Test Addon", description: "A fake addon for local testing only.", avatar: "/image/favicon.png", content: "print('Local test 1')" },
+    { id: "2", name: "Another Local Addon", description: "Just a second fake addon to fill space.", avatar: "/image/favicon.png", content: "console.log('Local test 2');" },
+    { id: "3", name: "Demo Plugin", description: "Shows how modals and looping work locally.", avatar: "/image/favicon.png", content: "alert('Fake content loaded');" }
+  ];
+
+  const createItem = (a) => {
+    const item = document.createElement("div");
+    item.className = "addon-ticker-item";
+
+    const avatar = document.createElement("img");
+    avatar.src = a.avatar;
+    item.appendChild(avatar);
+
+    const name = document.createElement("div");
+    name.className = "addon-name";
+    name.textContent = a.name.length > 15 ? a.name.slice(0, 15) + "…" : a.name;
+    item.appendChild(name);
+
+    const desc = document.createElement("div");
+    desc.className = "addon-desc";
+    desc.textContent = a.description;
+    item.appendChild(desc);
+
+    // Modal click
+    item.addEventListener("click", () => {
+      const overlay = document.getElementById("modal-overlay");
+      const box = document.getElementById("modal-box");
+      const modalBody = document.querySelector(".modal-body");
+
+      document.getElementById("modal-title").textContent = a.name;
+      document.getElementById("modal-desc").textContent = a.description;
+
+      const oldPre = modalBody.querySelector("pre");
+      if (oldPre) oldPre.remove();
+
+      const pre = document.createElement("pre");
+      pre.textContent = a.content;
+      modalBody.appendChild(pre);
+
+      overlay.classList.add("show");
+      overlay.style.opacity = "1";
+      box.style.transform = "scale(1)";
+    });
+
+    return item;
+  };
+
+  // Fill ticker with initial set
+  fakeAddons.forEach(a => ticker.appendChild(createItem(a)));
+
+  // Duplicate until ticker is at least 2x viewport width (same logic as real version)
+  while (ticker.scrollWidth < ticker.clientWidth * 2) {
+    fakeAddons.forEach(a => ticker.appendChild(createItem(a)));
+  }
+
+  let offset = 0;
+  let paused = false;
+  const speed = 2;
+
+  ticker.addEventListener("mouseenter", () => paused = true);
+  ticker.addEventListener("mouseleave", () => paused = false);
+
+  // === Animation loop identical to real version ===
+  function animate() {
+    if (!paused) {
+      offset -= speed;
+      if (Math.abs(offset) >= ticker.scrollWidth / 2) offset = 0;
+      ticker.style.transform = `translateX(${offset}px)`;
+    }
+    requestAnimationFrame(animate);
+  }
+
+  animate();
+
+  // === Modal close logic ===
+  const overlay = document.getElementById("modal-overlay");
+  const box = document.getElementById("modal-box");
+  const closeModal = () => {
+    overlay.style.opacity = "0";
+    box.style.transform = "scale(0.5)";
+    overlay.addEventListener("transitionend", function handler(e) {
+      if (e.propertyName === "opacity") {
+        overlay.classList.remove("show");
+        overlay.style.opacity = "";
+        box.style.transform = "";
+        overlay.removeEventListener("transitionend", handler);
+      }
+    });
+  };
+
+  document.getElementById("modal-close").addEventListener("click", closeModal);
+  overlay.addEventListener("click", e => {
+    if (e.target.id === "modal-overlay") closeModal();
+  });
+  document.addEventListener("keydown", e => {
+    if (e.key === "Escape") closeModal();
+  });
+});
+</script>
+
+
+
+
+  <script>
+    // Hamburger menu
+    const hamburger = document.querySelector('.hamburger');
+    const navLinks = document.querySelector('.nav-links');
+    hamburger.addEventListener('click', () => {
+      navLinks.classList.toggle('active');
+      hamburger.classList.toggle('open');
+    });
+
+    // Fade in on load
+    window.addEventListener('load', () => {
+      const fadeElements = document.querySelectorAll('.hero-text > *, .promo > *, header, footer');
+      fadeElements.forEach((el, i) => {
+        el.classList.add('fade-up');
+        setTimeout(() => {
+          el.classList.add('visible');
+        }, 200 + i * 150);
+      });
+    });
+
+    // Typewriter effect
+    document.addEventListener('DOMContentLoaded', () => {
+      const typedTextEl = document.getElementById('typedText');
+      const cursorEl = document.getElementById('cursor');
+      if (!typedTextEl || !cursorEl) return;
+
+      const phrases = [
+        "The best place to explore Housing and HTSL.",
+        "Upload your HTSL creations easily.",
+        "Keep your private HTSL code on the cloud.",
+        "Download HTSL creations by other users.",
+        "Found bad content? Report it using the new report feature.",
+      ];
+
+      let phraseIndex = 0;
+      let charIndex = 0;
+      let typing = true;
+
+      const typingSpeed = 70;
+      const deletingSpeed = 25;
+      const fullTextPause = 1000;
+      const totalLoopDelay = 3000;
+
+      function typeLoop() {
+        const currentText = phrases[phraseIndex];
+        if (typing) {
+          charIndex++;
+          typedTextEl.textContent = currentText.slice(0, charIndex);
+          cursorEl.classList.remove('hidden');
+          if (charIndex === currentText.length) {
+            typing = false;
+            setTimeout(() => cursorEl.classList.add('hidden'), fullTextPause);
+            setTimeout(typeLoop, totalLoopDelay);
+            return;
+          }
+          setTimeout(typeLoop, typingSpeed);
+        } else {
+          charIndex--;
+          typedTextEl.textContent = currentText.slice(0, charIndex);
+          cursorEl.classList.remove('hidden');
+          if (charIndex === 0) {
+            typing = true;
+            phraseIndex = (phraseIndex + 1) % phrases.length;
+            setTimeout(typeLoop, 200);
+            return;
+          }
+          setTimeout(typeLoop, deletingSpeed);
+        }
+      }
+      typeLoop();
+    });
+  </script>
+</body>
+</html>
